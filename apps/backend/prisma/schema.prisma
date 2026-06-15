@@ -51,7 +51,7 @@ model Newtork {
   chainId   String
   rpcURL    String
   addresses Address[]
-  // tokens        Token[]
+  tokens    Token[]
   createdAt DateTime  @default(now())
 }
 
@@ -65,4 +65,14 @@ model Transaction {
   address     Address  @relation(fields: [addressId], references: [id])
   addressId   String
   createAt    DateTime @default(now())
+}
+
+model Token {
+  id          String   @id @default(uuid())
+  symbol      String
+  name        String
+  mintAddress String
+  network     Newtork  @relation(fields: [networkId], references: [id])
+  networkId   String
+  createdAt   DateTime @default(now())
 }
