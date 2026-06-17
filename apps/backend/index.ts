@@ -8,26 +8,34 @@ const app = express()
 
 app.use(express.json())
 
-app.post('/vault/create', async (req, res) => {
-  const { password } = req.body
+app.post("/vault/create", async (req, res) => {
+  try {
+    const { password } = req.body;
 
-  if (!password || typeof password !== "string") {
-    return res.status(400).json({ error: "Password required" })
-  }
-  if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({ error: "Invalid Password Length" })
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10)
-  const vault = await prisma.vault.create({
-    data: {
-      passwordHash
+    if (!password || typeof password !== "string") {
+      return res.status(400).json({ error: "Password required" });
     }
-  })
-  return res.status(201).json({
-    vaultId: vault.id,
-    message: "Vault Created"
-  })
-})
+    if (password.length < 8 || password.length > 128) {
+      return res.status(400).json({ error: "Invalid password length" });
+    }
 
-app.listen(3000);
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const vault = await prisma.vault.create({
+      data: {
+        passwordHash,
+      },
+    });
+    return res.status(201).json({
+      vaultId: vault.id,
+      message: "Vault created",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.listen(3000, () => {
+  console.log("Server started on http://localhost:3000")
+});
