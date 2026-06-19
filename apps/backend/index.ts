@@ -108,35 +108,40 @@ app.post("/vault/lock", async (req, res) => {
 
 app.post("/account/create", async (req, res) => {
 
-  const vault = await prisma.vault.findFirst()
-  if (!vault) {
-    return res.status(404).json({ error: "Vault not found" })
-  }
-  if (!vaultUnlocked) {
-    return res.status(401).json({ error: "Vault is locked" })
-  }
-
-  const { name } = req.body
-  if (!name || typeof name !== "string") {
-    return res.status(400).json({ error: "Account name required" })
-  }
-
-  const existingAccount = await prisma.account.findFirst({ where: { vaultId: vault.id, name } })
-  if (existingAccount) {
-    return res.status(409).json({ error: "Account already exists" })
-  }
-
-  const account = await prisma.account.create({
-    data: {
-      vaultId: vault.id,
-      name
+  try {
+    const vault = await prisma.vault.findFirst()
+    if (!vault) {
+      return res.status(404).json({ error: "Vault not found" })
     }
-  })
-  return res.status(200).json({
-    accountId: account.id,
-    name: account.name,
-    message: "Account created"
-  })
+    if (!vaultUnlocked) {
+      return res.status(401).json({ error: "Vault is locked" })
+    }
+
+    const { name } = req.body
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ error: "Account name required" })
+    }
+
+    const existingAccount = await prisma.account.findFirst({ where: { vaultId: vault.id, name } })
+    if (existingAccount) {
+      return res.status(409).json({ error: "Account already exists" })
+    }
+
+    const account = await prisma.account.create({
+      data: {
+        vaultId: vault.id,
+        name
+      }
+    })
+    return res.status(200).json({
+      accountId: account.id,
+      name: account.name,
+      message: "Account created"
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: "Internal Server Error" })
+  }
 })
 
 app.listen(3000, () => {
