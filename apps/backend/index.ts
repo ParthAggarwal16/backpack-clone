@@ -166,6 +166,20 @@ app.get("/accounts", async (req, res) => {
   }
 })
 
+app.get("/accounts/:id", async (req, res) => {
+  if (!vaultUnlocked) {
+    res.status(401).json({ error: "Vault is locked" })
+  }
+
+  const { id } = req.params
+  const account = await prisma.account.findUnique({ where: { id } })
+
+  if (!account) {
+    res.status(404).json({ error: "Acciount not found" })
+  }
+  return res.status(200).json(account)
+})
+
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
 });
