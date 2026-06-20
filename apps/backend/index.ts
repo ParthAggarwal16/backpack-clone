@@ -185,6 +185,21 @@ app.get("/accounts/:id", async (req, res) => {
   }
 })
 
+app.delete("/accounts/:id", async (req, res) => {
+  if (!vaultUnlocked) {
+    return res.status(401).json({ error: "Vault is locked" })
+  }
+
+  const { id } = req.params
+  const account = await prisma.account.findUnique({ where: { id } })
+
+  if (!account) {
+    return res.status(404).json({ error: "Account doesn't exist" })
+  }
+  await prisma.account.delete({ where: { id } })
+  return res.status(200).json({ message: "Account deleted successfully" })
+})
+
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
 });
