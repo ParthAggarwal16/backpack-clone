@@ -205,6 +205,38 @@ app.delete("/accounts/:id", async (req, res) => {
   }
 })
 
+app.post("/accounts/:id/addresses/create", async (req, res) => {
+  if (!vaultUnlocked) {
+    return res.status(401).json({ error: "Vault is locked" })
+  }
+
+  const { id: accountId } = req.params
+  const { networkId } = req.body
+
+  if (!networkId) {
+    return res.status(400).json({ error: "Network Id is required" })
+  }
+
+  const account = await prisma.account.findUnique({ where: { id: accountId } })
+  if (!account) {
+    return res.status(400).json({ error: "Account not found" })
+  }
+
+  const network = await prisma.network.findUnique({ where: { id: networkId } })
+  if (!network) {
+    return res.status(400).json({ error: "Network not found" })
+  }
+  const address = await prisma.address.create({
+    data: {
+      publicKey: "TEMP_PUBLIC_KEY",
+      encryptedKey: "TEMP_ENCRYPTED_KEY",
+      accountId, networkId
+    }
+  })
+
+  return res.status(201).json({ message: "Address Created", address })
+})
+
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
 });
