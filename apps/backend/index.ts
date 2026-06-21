@@ -242,6 +242,46 @@ app.post("/accounts/:id/addresses/create", async (req, res) => {
   }
 })
 
+app.get("/accounts/:id/addresses", async (req, res) => {
+  try {
+    if (!vaultUnlocked) {
+      return res.status(401).json({ error: "Vault is lcoked" })
+    }
+    const { id: accountId } = req.params
+    const account = await prisma.account.findUnique({ where: { id: accountId } })
+    if (!account) {
+      return res.status(400).json({ error: "Account doesn't exist" })
+    }
+
+    const addresses = await prisma.address.findMany({ where: { accountId } })
+
+    return res.status(200).json({ addresses })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: "Internal Server Error" })
+  }
+})
+
+app.get("/addresses/:id", async (req, res) => {
+  try {
+    if (!vaultUnlocked) {
+      return res.status(401).json({ error: "Vault is locked" })
+    }
+
+    const { id } = req.params;
+    const address = await prisma.address.findUnique({ where: { id } })
+
+    if (!address) {
+      return res.status(404).json({ error: "Address not found" })
+    }
+
+    return res.status(200).json(address)
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: "Internal Server Error" })
+  }
+})
+
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
 });
