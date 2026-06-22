@@ -9,6 +9,7 @@ const app = express()
 app.use(express.json())
 
 let vaultUnlocked = false
+let unlockedPassword: string | null = null
 
 app.post("/vault/create", async (req, res) => {
   try {
@@ -21,14 +22,14 @@ app.post("/vault/create", async (req, res) => {
       return res.status(400).json({ error: "Invalid password length" })
     }
 
-    const existingVault = await prisma.vault.findFirst();
+    const existingVault = await prisma.vault.findFirst()
     if (existingVault) {
       return res.status(409).json({
         error: "Vault already exists",
       });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10)
 
     const vault = await prisma.vault.create({
       data: {
@@ -49,8 +50,8 @@ app.get("/vault/status", async (req, res) => {
   try {
     const existingVault = await prisma.vault.findFirst();
     return res.status(200).json({
-      "exists": true,
-      "unlocked": false
+      "exists": !!existingVault,
+      "unlocked": vaultUnlocked
     })
   } catch (err) {
     console.error(err);
@@ -76,6 +77,7 @@ app.post("/vault/unlock", async (req, res) => {
 
     }
     vaultUnlocked = true
+    unlockedPassword = password
 
     return res.status(200).json({
       message: "Vault unlocked"
@@ -98,6 +100,8 @@ app.post("/vault/lock", async (req, res) => {
       return res.status(400).json({ error: "Vault already locked" })
     }
     vaultUnlocked = false
+    unlockedPassword = null
+
     return res.status(200).json({ message: "Vault locked" })
   } catch (err) {
     console.error(err)
