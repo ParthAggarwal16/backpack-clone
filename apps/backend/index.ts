@@ -292,6 +292,21 @@ app.get("/addresses/:id", async (req, res) => {
   }
 })
 
+app.get("/addresses/:id/export", async (req, res) => {
+  if (!vaultUnlocked || !unlockedPassword) {
+    return res.status(401).json({ error: "Vault is Locked" })
+  }
+
+  const { id } = req.params
+  const address = await prisma.address.findUnique({ where: { id } })
+  if (!address) {
+    return res.status(400).json({ error: "No Address found" })
+  }
+
+  const privateKey = decryptPrivateKey(address.encryptedKey, unlockedPassword)
+  return res.status(200).json({ publicKey: address.publicKey, privateKey })
+})
+
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
 });
