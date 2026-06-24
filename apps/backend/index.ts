@@ -65,7 +65,7 @@ app.get("/vault/status", async (req, res) => {
 
 app.post("/vault/unlock", async (req, res) => {
   try {
-    const { password } = req.body
+    const { password } = req.body ?? {}
     if (!password || typeof password !== "string") {
       return res.status(400).json({ error: "Password required" })
     }
