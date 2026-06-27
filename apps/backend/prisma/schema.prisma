@@ -43,7 +43,7 @@ model Address {
   transactions   Transaction[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-  derivationPath String?
+  derivationPath String?       @db.VarChar(64)
 }
 
 model Network {
