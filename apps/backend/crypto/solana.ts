@@ -1,4 +1,4 @@
-import { Keypair } from "@solana/web3.js"
+import { Keypair, PublicKey } from "@solana/web3.js"
 import bs58 from "bs58"
 import bip39 from "bip39"
 import { derivePath } from "ed25519-hd-key"
@@ -28,5 +28,14 @@ export function deriveSolanaWallet(mnemonic: string, accountIndex = 0) {
     publicKey: keyPair.publicKey.toBase58(),
     privateKey: bs58.encode(keyPair.secretKey),
     derivationPath
+  }
+}
+
+export function importSolanaKeyPair(privateKey: string) {
+  const keyPair = Keypair.fromSecretKey(bs58.decode(privateKey))
+
+  return {
+    privateKey,
+    publicKey: keyPair.publicKey.toBase58()
   }
 }
