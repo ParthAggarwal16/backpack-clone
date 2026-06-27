@@ -1,7 +1,6 @@
 import express from "express"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
-import { generateSolanaKeypair } from "./crypto/solana"
 import { encryptPrivateKey, decryptPrivateKey } from "./crypto/encryption"
 
 const prisma = new PrismaClient()
@@ -311,6 +310,30 @@ app.get("/addresses/:id/export", async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" })
   }
 })
+
+app.post("accounts/:id/address/import", async (req, res) => {
+  if (!vaultUnlocked) {
+    return res.status(401).json({ error: "Vault is Locked" })
+  }
+
+  const { id: accountId } = req.params
+
+  const { networkId, privateKey, mnemonic } = req.body
+
+  if (!networkId) {
+    return res.status(400).json({ error: "Network id required" })
+  }
+
+  if (!privateKey && !mnemonic) {
+    return res.status(400).json({ error: "provide privateKey or mnemonic" })
+  }
+
+  if (privateKey && mnemonic) {
+    return res.status(400).json({ error: "Please provide only one import menthod" })
+  }
+
+})
+
 
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
