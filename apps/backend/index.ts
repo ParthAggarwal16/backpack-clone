@@ -2,7 +2,8 @@ import express from "express"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcrypt"
 import { encryptPrivateKey, decryptPrivateKey } from "./crypto/encryption"
-import { deriveSolanaWallet, importSolanaKeyPair, generateMnemonic } from "./crypto/solana"
+import { deriveSolanaWallet, importSolanaPrivateKey, generateMnemonic } from "./crypto/solana"
+import { validateMnemonic } from "bip39"
 
 const prisma = new PrismaClient()
 
@@ -333,7 +334,7 @@ app.get("/addresses/:id/export", async (req, res) => {
   }
 })
 
-app.post("accounts/:id/addresses/import", async (req, res) => {
+app.post("/accounts/:id/addresses/import", async (req, res) => {
   if (!vaultUnlocked) {
     return res.status(401).json({ error: "Vault is Locked" })
   }
@@ -347,23 +348,23 @@ app.post("accounts/:id/addresses/import", async (req, res) => {
   }
 
   if (!privateKey && !mnemonic) {
-    return res.status(400).json({ error: "provide privateKey or mnemonic" })
+    return res.status(400).json({ error: "Provide privateKey or mnemonic" })
   }
 
   if (privateKey && mnemonic) {
-    return res.status(400).json({ error: "Please provide only one import menthod" })
+    return res.status(400).json({ error: "Provide only one import method" })
   }
 
   const account = await prisma.account.findUnique({ where: { id: accountId }, include: { seedPhrase: true } })
 
   if (!account) {
-    return res.status(400).json({ error: "Accout not found" })
+    return res.status(404).json({ error: "Account not found" })
   }
 
   const network = await prisma.network.findUnique({ where: { id: networkId } })
 
   if (!network) {
-    return res.status(400).json({ error: "Network not found" })
+    return res.status(404).json({ error: "Network not found" })
   }
 
   let publicKey: string
@@ -371,12 +372,46 @@ app.post("accounts/:id/addresses/import", async (req, res) => {
   let derivationPath: string | null = null
 
   if (privateKey) {
-    const wallet = importSolanaKeyPair(privateKey)
+    const wallet = importSolanaPrivateKey(privateKey)
 
     publicKey = wallet.publicKey
 
     encryptedKey = encryptPrivateKey(wallet.privateKey, unlockedPassword!)
+  } else {
+    if (!validateMnemonic(mnemonic)) {
+      return res.status(400).json({ error: "Invalid mnemonic" })
+    }
+
+    let accountIndex = 0
+
+    if (account.seedPhrase) {
+      accountIndex = await prisma.address.count({
+        where: { accountId, derivationPath: { not: null } },
+      })
+    } else {
+      await prisma.seedPhrase.create({
+        data: { accountId, encryptedMnemonic: encryptPrivateKey(mnemonic, unlockedPassword!) },
+      })
+    }
+
+    const wallet = deriveSolanaWallet(mnemonic, accountIndex)
+    publicKey = wallet.publicKey
+    encryptedKey = encryptPrivateKey(wallet.privateKey, unlockedPassword!)
+    derivationPath = wallet.derivationPath
+
   }
+
+  const existingAddress = await prisma.address.findFirst({ where: { publicKey, networkId } })
+
+  if (existingAddress) {
+    return res.status(409).json({ error: "Address already exists" })
+  }
+
+  const address = await prisma.address.create({
+    data: { publicKey, encryptedKey, derivationPath, accountId, networkId }
+  })
+
+  return res.status(201).json({ message: "Address Imported", address })
 })
 
 
