@@ -19,7 +19,7 @@ export function deriveSolanaWallet(mnemonic: string, accountIndex = 0) {
   const seed = bip39.mnemonicToSeedSync(mnemonic)
   const hexSeed = seed.toString("hex")
 
-  const derivationPath = `m/44'/501'/${accountIndex}/0'`
+  const derivationPath = `m/44'/501'/${accountIndex}'/0'`
 
   const deriveSeed = derivePath(derivationPath, hexSeed).key
 
@@ -31,7 +31,7 @@ export function deriveSolanaWallet(mnemonic: string, accountIndex = 0) {
   }
 }
 
-export function importSolanaKeyPair(privateKey: string) {
+export function importSolanaPrivateKey(privateKey: string) {
   const keyPair = Keypair.fromSecretKey(bs58.decode(privateKey))
 
   return {
