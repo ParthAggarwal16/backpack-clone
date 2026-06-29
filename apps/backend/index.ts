@@ -391,11 +391,24 @@ app.post("/accounts/:id/addresses/import", async (req, res) => {
     let derivationPath: string | null = null
 
     if (privateKey) {
-      const wallet = importSolanaPrivateKey(privateKey)
+      switch (network.type) {
+        case "SOLANA": {
+          const wallet = importSolanaPrivateKey(privateKey)
 
-      publicKey = wallet.publicKey
+          publicKey = wallet.publicKey
+          encryptedKey = encryptPrivateKey(
+            wallet.privateKey,
+            unlockedPassword!
+          )
 
-      encryptedKey = encryptPrivateKey(wallet.privateKey, unlockedPassword!)
+          break
+        }
+
+        default:
+          return res.status(400).json({
+            error: `${network.type} not supported yet`,
+          })
+      }
     } else {
       if (!validateMnemonic(mnemonic)) {
         return res.status(400).json({ error: "Invalid mnemonic" })
