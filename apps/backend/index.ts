@@ -487,6 +487,23 @@ app.patch("/accounts/:id", async (req, res) => {
   }
 })
 
+app.delete("/addresses/:id", async (req, res) => {
+  if (!vaultUnlocked) {
+    return res.status(401).json({ error: "Vault is Locked" })
+  }
+
+  const { id } = req.params
+  const address = await prisma.address.findUnique({ where: { id } })
+  if (!address) {
+    return res.status(400).json({ error: "Address doesn't exist" })
+  }
+
+  await prisma.address.delete({ where: { id } })
+
+  return res.status(200).json({ message: "Account deleted successfully" })
+
+})
+
 
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
