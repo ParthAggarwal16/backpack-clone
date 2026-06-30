@@ -454,6 +454,34 @@ app.post("/accounts/:id/addresses/import", async (req, res) => {
   }
 })
 
+app.patch("/accounts/:id", async (req, res) => {
+  if (!vaultUnlocked) {
+    return res.status(401).json({ error: "Vault is locked" })
+  }
+
+  const { id } = req.params
+  const { name } = req.body
+
+  if (!name || typeof (name) !== "string") {
+    return res.status(400).json({ error: "Account name required" })
+  }
+
+  const account = await prisma.account.findUnique({ where: { id } })
+  if (!account) {
+    return res.status(404).json({ error: "Account not found" })
+  }
+
+  const existingAccount = await prisma.account.findFirst({ where: { vaultId: account.vaultId, name, NOT: { id } } })
+
+  if (existingAccount) {
+    return res.status(409).json({ error: "Account already exists" })
+  }
+
+  const updatedAccount = await prisma.account.update({ where: { id }, data: { name } })
+
+  return res.status(200).json({ message: "Account Updated", account: updatedAccount })
+})
+
 
 app.listen(3000, () => {
   console.log("Server started on http://localhost:3000")
