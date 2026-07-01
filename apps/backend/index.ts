@@ -537,17 +537,21 @@ app.get("/networks/:id", async (req, res) => {
 
 app.get("/networks/:id/tokens", async (req, res) => {
 
-  const { id: networkId } = req.params
+  try {
+    const { id: networkId } = req.params
 
-  const network = await prisma.network.findUnique({ where: { id: networkId } })
+    const network = await prisma.network.findUnique({ where: { id: networkId } })
 
-  if (!network) {
-    return res.status(404).json({ error: "Network Not found" })
+    if (!network) {
+      return res.status(404).json({ error: "Network Not found" })
+    }
+
+    const tokens = await prisma.token.findMany({ where: { networkId }, orderBy: { name: "asc" } })
+    return res.status(200).json({ tokens })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: "Internal Server Error" })
   }
-
-  const tokens = await prisma.token.findMany({ where: { networkId }, orderBy: { name: "asc" } })
-  return res.status(200).json({ tokens })
-
 })
 
 app.get("/tokens/:id", async (req, res) => {
